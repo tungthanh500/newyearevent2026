@@ -223,11 +223,39 @@
     }
 
     // Chạy
-    init();
+    // Tìm hàm init() cũ và thay bằng đoạn này
+    async function init() {
+        showLoader(true);
+        try {
+            const res = await fetch(API_URL + "?action=getData");
+            const data = await res.json();
+            
+            // --- THÊM ĐOẠN KIỂM TRA LỖI NÀY ---
+            if (!data.success) {
+                alert("Lỗi từ Google Sheet: " + (data.error || "Không lấy được dữ liệu"));
+                console.error("Chi tiết lỗi:", data);
+                return;
+            }
+            if (!data.users || !Array.isArray(data.users)) {
+                 alert("Lỗi cấu trúc dữ liệu: Không tìm thấy danh sách 'users'. Kiểm tra lại tên Sheet.");
+                 return;
+            }
+            // ----------------------------------
+
+            appData = data;
+            renderUserList(data.users);
+        } catch (e) {
+            alert("Không thể kết nối tới Google Sheet. Hãy kiểm tra lại đường link API_URL.");
+            console.error(e);
+        } finally {
+            showLoader(false);
+        }
+    }
 
 </script>
 
 </body>
 
 </html>
+
 
