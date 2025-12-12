@@ -39,43 +39,69 @@
 
     <script>
         // --- THAY LINK CỦA BẠN VÀO ĐÂY ---
-        const API_URL = "https://script.google.com/macros/s/AKfycbyG6JIfNcrW2m4DIcmahncBnIOKyMjDidrjLhNTaf26AUaxK67vA7nnJE0Hdpf-qhBY1A/exec"; 
+        const API_URL = "https://script.google.com/macros/s/AKfycbxjz2Tvo4urjlgXhwCGj4wnSXMhBZ_02lu-EJihTI9I1lcdIdZW5LBFUvd1XquwVb_Jxw/exec"; 
 
-        let allCandidates = [];
-        let currentUser = localStorage.getItem('voter_name'); // Lấy tên đã lưu trong máy
-        let hasVoted = localStorage.getItem('has_voted');     // Kiểm tra xem đã bầu chưa
+let allCandidates = [];
+let currentUser = localStorage.getItem('voter_name');
 
-        async function init() {
-            try {
-                // Nếu đã bầu rồi thì hiện trang xong luôn
-                if (hasVoted) {
-                    showStep3();
-                    return;
-                }
+// 1. Hàm khởi động thông minh hơn
+async function init() {
+    try {
+        // Tải dữ liệu từ server về trước
+        await loadData();
 
-                // Nếu chưa bầu nhưng đã chọn tên, nhảy sang bước 2
-                if (currentUser) {
-                    // Cần tải danh sách để hiển thị người để bầu
-                    await loadData();
-                    showStep2();
-                } else {
-                    // Chưa có gì cả -> Tải danh sách và hiện bước 1
-                    await loadData();
-                    showStep1();
-                }
+        // Lấy trạng thái đã bầu trong máy
+        let hasVoted = localStorage.getItem('has_voted');
 
-            } catch (err) {
-                alert("Lỗi tải trang!");
-            } finally {
-                document.getElementById('loading').classList.add('hidden');
+        // Logic kiểm tra xem có nên hiện trang "Đã bầu xong" hay không
+        if (hasVoted) {
+            showStep3();
+        } else if (currentUser) {
+            // Chưa bầu nhưng máy đã nhớ tên -> Vào thẳng bước 2
+            showStep2();
+        } else {
+            // Chưa có gì cả -> Bước 1
+            showStep1();
+        }
+
+    } catch (err) {
+        console.error(err);
+        alert("Lỗi tải trang!");
+    } finally {
+        document.getElementById('loading').classList.add('hidden');
+    }
+}
+
+// 2. Cập nhật hàm loadData để check Round ID
+async function loadData() {
+    const res = await fetch(API_URL + "?action=getList");
+    const json = await res.json();
+    
+    if (json.status === "success") {
+        allCandidates = json.data;
+        
+        // --- ĐOẠN MỚI: KIỂM TRA MÃ PHIÊN ---
+        const serverRoundId = json.roundId; // Mã phiên từ server
+        const localRoundId = localStorage.getItem('saved_round_id'); // Mã phiên trong máy
+        
+        // Nếu mã server khác mã trong máy => Admin đã bấm Reset
+        if (serverRoundId && serverRoundId !== localRoundId) {
+            console.log("Phát hiện vòng bầu cử mới! Reset trạng thái.");
+            
+            // Xóa trạng thái "Đã bầu"
+            localStorage.removeItem('has_voted');
+            
+            // Cập nhật mã phiên mới vào máy
+            localStorage.setItem('saved_round_id', serverRoundId);
+            
+            // Nếu đang kẹt ở màn hình Step 3 (Kết quả), reload lại để về Step 2
+            if (!document.getElementById('step-3').classList.contains('hidden')) {
+                location.reload();
             }
         }
-
-        async function loadData() {
-            const res = await fetch(API_URL + "?action=getList");
-            const json = await res.json();
-            if (json.status === "success") allCandidates = json.data;
-        }
+        // ------------------------------------
+    }
+}
 
         function showStep1() {
             document.getElementById('step-1').classList.remove('hidden');
@@ -148,4 +174,5 @@
     </script>
 </body>
 </html>
+
 
