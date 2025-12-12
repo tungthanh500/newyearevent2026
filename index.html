@@ -81,6 +81,22 @@
         .user-highlight { color: #0984e3; font-weight: bold; font-size: 1.1em; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Container chứa danh sách voters */
+        #voter-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Chia thành 2 cột bằng nhau */
+            gap: 10px; /* Khoảng cách giữa các ô */
+            width: 100%;
+        }
+        
+        /* Style cho từng nút (Voter) */
+        #voter-list button {
+            width: 100%; /* Nút chiếm hết chiều rộng cột */
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -264,4 +280,5 @@
     </script>
 </body>
 </html>
+
 
