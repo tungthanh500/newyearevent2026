@@ -2,212 +2,153 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kết Quả Trực Tiếp</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            max-width: 900px; 
-            margin: 0 auto; 
-            padding: 20px; 
-            background-color: #1a1a2e; /* Nền tối */
-            color: #fff;
-            position: relative;
+        body { font-family: 'Segoe UI', sans-serif; background-color: #1a1a2e; color: #fff; max-width: 900px; margin: 0 auto; padding: 20px; position: relative; }
+        
+        /* Tiêu đề Topic lớn */
+        #topic-display { 
+            text-align: center; color: #e94560; text-transform: uppercase; 
+            letter-spacing: 2px; font-size: 2.5em; margin-bottom: 5px; 
+            text-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
         }
+        .status { text-align: center; color: #aaa; font-style: italic; margin-bottom: 30px; }
 
-        h1 { 
-            text-align: center; 
-            color: #e94560; 
-            text-transform: uppercase; 
-            letter-spacing: 2px;
-            margin-bottom: 5px;
+        /* Nút mở bảng Reset */
+        .btn-toggle-reset {
+            position: absolute; top: 20px; right: 20px;
+            background: #333; color: #aaa; border: 1px solid #555;
+            padding: 5px 10px; cursor: pointer; border-radius: 4px;
         }
+        .btn-toggle-reset:hover { color: #fff; border-color: #fff; }
 
-        .status { 
-            text-align: center; 
-            font-size: 0.9em; 
-            color: #a0a0a0; 
-            margin-bottom: 30px; 
-            font-style: italic;
+        /* PANEL NHẬP LIỆU (Ẩn mặc định) */
+        #admin-panel {
+            display: none; /* Ẩn */
+            background: #16213e; border: 1px solid #e94560;
+            padding: 20px; margin-bottom: 20px; border-radius: 8px;
+            text-align: center;
         }
-
-        /* Nút Reset góc phải */
-        .btn-reset {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background-color: #d9534f;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            opacity: 0.6;
-            transition: 0.3s;
-            z-index: 100;
+        
+        /* Input đẹp */
+        .admin-input {
+            padding: 10px; margin: 5px; width: 60%;
+            border-radius: 4px; border: none; outline: none;
+            font-size: 1em;
         }
-        .btn-reset:hover { opacity: 1; transform: scale(1.05); }
-
-        /* Khung chứa biểu đồ */
-        #chart { padding: 10px; }
-
-        /* Item từng người */
-        .bar-container { 
-            margin-bottom: 20px; 
-            background: rgba(255, 255, 255, 0.05);
-            padding: 10px 15px;
-            border-radius: 12px;
+        .btn-confirm {
+            padding: 10px 20px; background: #e94560; color: white;
+            border: none; border-radius: 4px; cursor: pointer; font-weight: bold;
         }
+        .btn-confirm:hover { background: #c0394d; }
 
-        .label { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-bottom: 8px; 
-            font-size: 1.1em;
-            font-weight: bold;
-        }
-
-        /* Thanh Progress Bar */
-        .progress-bg { 
-            background: #333; 
-            border-radius: 10px; 
-            height: 25px; 
-            width: 100%;
-            overflow: hidden; 
-            position: relative;
-        }
-
-        .progress-fill { 
-            height: 100%; 
-            background: linear-gradient(90deg, #ff9966, #ff5e62); 
-            width: 0%; 
-            transition: width 1s ease-in-out; /* Hiệu ứng trượt mượt */
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(255, 94, 98, 0.5);
-        }
-
-        /* Top 1 Highlight */
+        /* ... CSS biểu đồ giữ nguyên ... */
+        .bar-container { margin-bottom: 15px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;}
+        .label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold;}
+        .progress-bg { background: #333; height: 25px; border-radius: 12px; overflow: hidden;}
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #ff9966, #ff5e62); width: 0%; transition: width 1s;}
         .top-1 .progress-fill { background: linear-gradient(90deg, #f1c40f, #f39c12); }
-        .top-1 .label { color: #f1c40f; }
-
-        /* Hiệu ứng loading */
-        .loading-text { text-align: center; margin-top: 50px; color: #666; }
-
     </style>
 </head>
 <body>
 
-    <button class="btn-reset" onclick="handleReset()">⚠️ RESET DATA</button>
+    <button class="btn-toggle-reset" onclick="toggleAdmin()">⚙️ Admin</button>
 
-    <h1>🏆 BẢNG XẾP HẠNG</h1>
-    <div class="status">
-        Cập nhật tự động mỗi 5 giây... 
-        <span id="last-updated" style="color: #4cd137"></span>
+    <div id="admin-panel">
+        <h3 style="margin-top:0">THIẾT LẬP VÒNG MỚI</h3>
+        <input type="text" id="new-topic" class="admin-input" placeholder="Nhập nội dung bầu chọn (VD: Ai đẹp trai nhất?)...">
+        <br>
+        <input type="password" id="admin-pass" class="admin-input" placeholder="Mật khẩu Admin (Mặc định: 123456)" style="width: 30%">
+        <br><br>
+        <button class="btn-confirm" onclick="confirmReset()">🚀 OK - BẮT ĐẦU VÒNG MỚI</button>
+        <button onclick="toggleAdmin()" style="background:none; border:none; color:#aaa; cursor:pointer; text-decoration:underline">Hủy</button>
     </div>
 
-    <div id="chart">
-        <div class="loading-text">⏳ Đang kết nối dữ liệu...</div>
-    </div>
+    <h1 id="topic-display">ĐANG TẢI...</h1>
+    
+    <div class="status">Cập nhật mỗi 5 giây... <span id="timer"></span></div>
+    <div id="chart"></div>
 
     <script>
-        // --- CẤU HÌNH QUAN TRỌNG ---
-        // Thay link Web App của bạn vào đây (Link có đuôi /exec)
-        const API_URL = "https://script.google.com/macros/s/AKfycbxjz2Tvo4urjlgXhwCGj4wnSXMhBZ_02lu-EJihTI9I1lcdIdZW5LBFUvd1XquwVb_Jxw/exec"; 
+        // --- THAY LINK API CỦA BẠN ---
+        const API_URL = "https://script.google.com/macros/s/AKfycbxj2B1XkzBT87WbsRws98AKGVEYB5veURyftkavdtCleaEjec0zVXQJJ1x06co7ZS479A/exec"; 
 
-        const REFRESH_RATE = 5000; // 5000ms = 5 giây
-
-        // Hàm cập nhật dữ liệu
+        // 1. Hàm Cập nhật (Tự động chạy)
         async function updateResult() {
             try {
-                // Gọi API lấy kết quả
                 const res = await fetch(API_URL + "?action=getResult");
                 const json = await res.json();
                 
                 if (json.status === "success") {
+                    // CẬP NHẬT TIÊU ĐỀ
+                    document.getElementById('topic-display').innerText = json.topic;
                     renderChart(json.ranking);
-                    
-                    // Cập nhật giờ hiển thị
-                    const now = new Date();
-                    document.getElementById('last-updated').innerText = 
-                        now.toLocaleTimeString();
                 }
-            } catch (err) {
-                console.log("Đang chờ kết nối...");
-            }
+            } catch (err) { console.log("Waiting..."); }
         }
 
-        // Hàm vẽ biểu đồ
+        // 2. Hàm vẽ biểu đồ
         function renderChart(ranking) {
             const container = document.getElementById('chart');
-            
+            container.innerHTML = ""; 
             if (ranking.length === 0) {
-                container.innerHTML = "<p style='text-align:center; color:#888; margin-top:30px'>Chưa có phiếu bầu nào.</p>";
+                container.innerHTML = "<p style='text-align:center'>Chưa có phiếu bầu</p>";
                 return;
             }
-
-            // Xóa loading cũ (nếu có) nhưng giữ nguyên cấu trúc để update mượt hơn
-            // (Ở đây mình chọn cách xóa đi vẽ lại cho đơn giản code)
-            container.innerHTML = "";
-
-            const maxVote = ranking[0].count; // Lấy số phiếu cao nhất để tính %
-
+            const maxVote = ranking[0].count;
             ranking.forEach((r, idx) => {
-                // Tính phần trăm chiều dài thanh bar
                 let percent = (r.count / maxVote) * 100;
-                // Nếu ít phiếu quá thì để tối thiểu 5% cho đẹp
                 if(percent < 5) percent = 5;
-
-                const isTop1 = idx === 0 ? "top-1" : "";
-                
                 const div = document.createElement('div');
-                div.className = `bar-container ${isTop1}`;
+                div.className = `bar-container ${idx === 0 ? 'top-1' : ''}`;
                 div.innerHTML = `
-                    <div class="label">
-                        <span>#${idx + 1} ${r.name}</span>
-                        <span>${r.count} phiếu</span>
-                    </div>
-                    <div class="progress-bg">
-                        <div class="progress-fill" style="width: ${percent}%"></div>
-                    </div>
+                    <div class="label"><span>#${idx+1} ${r.name}</span><span>${r.count}</span></div>
+                    <div class="progress-bg"><div class="progress-fill" style="width: ${percent}%"></div></div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        // Hàm xử lý nút Reset
-        async function handleReset() {
-            // 1. Hỏi mật khẩu
-            let password = prompt("⚠️ CẢNH BÁO: Bạn có chắc muốn XÓA TOÀN BỘ kết quả không?\n\nNhập mật khẩu Admin để xác nhận:");
-            
-            if (!password) return; // Người dùng bấm Hủy
+        // 3. Xử lý Giao diện Admin
+        function toggleAdmin() {
+            const panel = document.getElementById('admin-panel');
+            panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+        }
 
-            // 2. Gửi lệnh reset lên Server
+        async function confirmReset() {
+            const topic = document.getElementById('new-topic').value;
+            const pass = document.getElementById('admin-pass').value;
+
+            if (!topic) { alert("Vui lòng nhập chủ đề!"); return; }
+            if (!pass) { alert("Vui lòng nhập mật khẩu!"); return; }
+
+            const btn = document.querySelector('.btn-confirm');
+            btn.innerText = "⏳ Đang xử lý...";
+            btn.disabled = true;
+
             try {
-                const btn = document.querySelector('.btn-reset');
-                btn.innerText = "Đang xóa...";
-                
-                let res = await fetch(API_URL + "?action=reset&password=" + encodeURIComponent(password));
-                let json = await res.json();
+                // Gọi API gửi Topic + Pass
+                const url = `${API_URL}?action=reset&password=${encodeURIComponent(pass)}&topic=${encodeURIComponent(topic)}`;
+                const res = await fetch(url);
+                const json = await res.json();
 
                 if (json.status === "success") {
-                    alert("✅ " + json.message);
-                    updateResult(); // Cập nhật lại ngay lập tức
+                    alert("✅ Thành công! Vòng bầu chọn mới đã bắt đầu.");
+                    toggleAdmin(); // Đóng bảng
+                    updateResult(); // Cập nhật lại ngay
+                    document.getElementById('new-topic').value = ""; // Xóa ô nhập
                 } else {
                     alert("❌ Lỗi: " + json.message);
                 }
-                
-                btn.innerText = "⚠️ RESET DATA";
-            } catch (err) {
-                alert("Lỗi kết nối server!");
-                document.querySelector('.btn-reset').innerText = "⚠️ RESET DATA";
-            }
+            } catch (err) { alert("Lỗi kết nối!"); }
+            
+            btn.innerText = "🚀 OK - BẮT ĐẦU VÒNG MỚI";
+            btn.disabled = false;
         }
 
-        // --- KHỞI CHẠY ---
-        updateResult(); // Chạy ngay lần đầu
-        setInterval(updateResult, REFRESH_RATE); // Lặp lại mỗi 5s
-
+        // Chạy
+        updateResult();
+        setInterval(updateResult, 5000);
     </script>
 </body>
 </html>
