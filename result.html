@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Kết Quả Trực Tiếp</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #222; color: white; }
+        h1 { text-align: center; color: #ffeb3b; }
+        .status { text-align: center; font-size: 0.8em; color: #aaa; margin-bottom: 20px; }
+        
+        .bar-container { margin-bottom: 15px; }
+        .label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold;}
+        .progress-bg { background: #444; border-radius: 10px; height: 30px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #ff9800, #ff5722); width: 0%; transition: width 1s ease-in-out; }
+    </style>
+</head>
+<body>
+
+    <h1>🏆 BẢNG XẾP HẠNG</h1>
+    <div class="status">Cập nhật tự động sau mỗi 5 giây... <span id="timer"></span></div>
+
+    <div id="chart"></div>
+
+    <script>
+        // --- THAY LINK CỦA BẠN VÀO ĐÂY ---
+        const API_URL = "https://script.google.com/macros/s/AKfycb...CHANGE_ME.../exec"; 
+
+        async function updateResult() {
+            try {
+                // Gọi API lấy kết quả
+                const res = await fetch(API_URL + "?action=getResult");
+                const json = await res.json();
+                
+                if (json.status === "success") {
+                    renderChart(json.ranking);
+                }
+            } catch (err) {
+                console.log("Đang chờ kết nối...");
+            }
+        }
+
+        function renderChart(ranking) {
+            const container = document.getElementById('chart');
+            container.innerHTML = ""; // Xóa cũ
+
+            if (ranking.length === 0) {
+                container.innerHTML = "<p style='text-align:center'>Chưa có phiếu nào</p>";
+                return;
+            }
+
+            const maxVote = ranking[0].count; // Người cao nhất để tính %
+
+            ranking.forEach((r, idx) => {
+                const percent = (r.count / maxVote) * 100;
+                
+                const div = document.createElement('div');
+                div.className = 'bar-container';
+                div.innerHTML = `
+                    <div class="label">
+                        <span>#${idx + 1} ${r.name}</span>
+                        <span>${r.count} phiếu</span>
+                    </div>
+                    <div class="progress-bg">
+                        <div class="progress-fill" style="width: ${percent}%"></div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Chạy lần đầu
+        updateResult();
+
+        // Lặp lại mỗi 5000ms (5 giây)
+        setInterval(updateResult, 5000);
+
+    </script>
+</body>
+</html>
