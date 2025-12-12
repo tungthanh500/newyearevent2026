@@ -93,7 +93,7 @@
     <div id="loading">⏳ Đang tải dữ liệu...</div>
 
     <div id="step-1" class="card hidden">
-        <h3>👋 Xin chào, bạn là ai?</h3>
+        <h3>👋 Xin chào, bạn tên gì?</h3>
         <p style="color:#666; margin-bottom:15px">Vui lòng chọn tên của bạn:</p>
         <div id="voter-list"></div>
     </div>
@@ -254,7 +254,7 @@
 
         // Tiện ích: Cho phép chọn lại người bầu (nếu lỡ chọn nhầm tên)
         function resetVoter() {
-            if(confirm("Bạn có muốn chọn lại tên Người Bầu không?")) {
+            if(confirm("Bạn có muốn chọn lại tên không?")) {
                 localStorage.removeItem('voter_name');
                 location.reload();
             }
@@ -264,3 +264,4 @@
     </script>
 </body>
 </html>
+
