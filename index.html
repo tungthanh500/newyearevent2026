@@ -5,49 +5,125 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bầu Chọn</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f4f4f9; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f4f4f9; 
+            position: relative; /* Để căn chỉnh nút Refresh */
+        }
+
+        /* Nút Refresh góc phải */
+        .btn-refresh {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-refresh:hover { background: #e9ecef; color: #000; }
+        .btn-refresh:active { transform: scale(0.95); }
+
         .hidden { display: none !important; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px;}
-        button { width: 100%; padding: 12px; margin: 5px 0; cursor: pointer; border-radius: 5px; border: 1px solid #ddd; background: #fff; font-size: 16px;}
-        button:hover { background-color: #f0f0f0; border-color: #bbb;}
-        .btn-vote { background-color: #007bff; color: white; border: none; font-weight: bold;}
-        .btn-vote:hover { background-color: #0056b3; }
+        
+        .card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s;
+        }
+
+        /* Các nút bấm chọn */
+        button.option-btn { 
+            width: 100%; 
+            padding: 15px; 
+            margin: 8px 0; 
+            cursor: pointer; 
+            border-radius: 8px; 
+            border: 1px solid #eee; 
+            background: #fff; 
+            font-size: 16px;
+            text-align: left;
+            transition: 0.2s;
+        }
+        button.option-btn:hover { 
+            background-color: #f8f9fa; 
+            border-color: #007bff;
+            color: #007bff;
+            font-weight: 500;
+        }
+
         #loading { text-align: center; color: #666; margin-top: 50px;}
-        #topic-header { text-align: center; color: #d63031; text-transform: uppercase; margin-bottom: 5px;}
+        
+        #topic-header { 
+            text-align: center; 
+            color: #d63031; 
+            text-transform: uppercase; 
+            margin-top: 40px; 
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .user-highlight { color: #0984e3; font-weight: bold; font-size: 1.1em; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
+
+    <button class="btn-refresh" onclick="location.reload()">
+        🔄 Tải lại
+    </button>
 
     <h2 id="topic-header"></h2>
     <div id="loading">⏳ Đang tải dữ liệu...</div>
 
     <div id="step-1" class="card hidden">
         <h3>👋 Xin chào, bạn là ai?</h3>
-        <p>Vui lòng chọn tên của bạn để bắt đầu:</p>
+        <p style="color:#666; margin-bottom:15px">Vui lòng chọn tên của bạn:</p>
         <div id="voter-list"></div>
     </div>
 
     <div id="step-2" class="card hidden">
         <h3>🗳️ Mời bỏ phiếu</h3>
-        <p>Người bầu: <b id="user-name-display" style="color:#0984e3"></b></p>
-        <p>Hãy chọn ứng viên bạn tín nhiệm:</p>
+        <p>Người bầu: <span id="user-name-display" class="user-highlight"></span></p>
+        <p style="color:#666; margin-bottom:15px">Hãy chọn ứng viên bạn tín nhiệm:</p>
         <div id="nominee-list"></div>
+        <div style="text-align:center; margin-top:20px;">
+            <small style="color:#aaa; cursor:pointer" onclick="resetVoter()">Admin: Chọn lại người bầu</small>
+        </div>
     </div>
 
-    <div id="step-3" class="card hidden">
-        <h2 style="text-align: center; color: green;">✅ Đã gửi phiếu!</h2>
-        <p style="text-align: center;">Cảm ơn bạn đã tham gia.</p>
-        <button onclick="window.location.href='result.html'" style="background:#28a745; color:white; border:none">Xem Kết Quả</button>
+    <div id="step-3" class="card hidden" style="text-align: center;">
+        <h1 style="font-size: 3em; margin-bottom: 10px;">✅</h1>
+        <h2 style="color: #27ae60;">Đã gửi phiếu thành công!</h2>
+        <p>Cảm ơn bạn đã tham gia bầu chọn.</p>
+        <br>
+        <button onclick="window.location.href='result.html'" style="background:#27ae60; color:white; border:none; padding:12px 25px; border-radius:5px; font-size:16px; cursor:pointer;">
+            📊 Xem Kết Quả
+        </button>
     </div>
 
     <script>
-        // --- THAY LINK CỦA BẠN VÀO ĐÂY ---
+        // --- THAY LINK API CỦA BẠN VÀO ĐÂY ---
         const API_URL = "https://script.google.com/macros/s/AKfycbyDgXOTzOfK6JhLHgGsRd-ONs2fmzh748FUbnXxDmhAdKPExKZYChqOpnrxDLaerx3fYw/exec"; 
 
-        // Biến lưu 2 danh sách riêng biệt
         let listVoters = [];
         let listNominees = [];
-        
         let currentUser = localStorage.getItem('voter_name');
 
         async function init() {
@@ -57,33 +133,38 @@
                 const json = await res.json();
                 
                 if (json.status === "success") {
-                    // Tách dữ liệu ra 2 biến
                     listVoters = json.voters;
                     listNominees = json.nominees;
                     
                     // Hiển thị chủ đề
-                    document.getElementById('topic-header').innerText = json.topic;
+                    const topicText = json.topic || "CHƯA CÓ CHỦ ĐỀ";
+                    document.getElementById('topic-header').innerText = topicText;
 
-                    // Kiểm tra Reset
+                    // Kiểm tra xem có phải vòng mới không
                     checkReset(json.roundId);
 
-                    // Điều hướng màn hình
+                    // Điều hướng
                     navigateStep();
+                } else {
+                    alert("Lỗi server: " + json.message);
                 }
             } catch (err) {
-                alert("Lỗi kết nối server!");
+                console.error(err);
+                document.getElementById('loading').innerText = "❌ Lỗi kết nối! Vui lòng bấm 'Tải lại'";
+                document.getElementById('loading').style.color = "red";
             } finally {
-                document.getElementById('loading').classList.add('hidden');
+                // Ẩn loading nếu đã tải xong
+                if(listVoters.length > 0) document.getElementById('loading').classList.add('hidden');
             }
         }
 
         function checkReset(serverRoundId) {
             const localRoundId = localStorage.getItem('saved_round_id');
+            // Nếu mã server khác mã máy -> Reset trạng thái bầu
             if (serverRoundId && serverRoundId !== localRoundId) {
-                localStorage.removeItem('has_voted'); // Xóa trạng thái đã bầu
+                localStorage.removeItem('has_voted'); 
                 localStorage.setItem('saved_round_id', serverRoundId);
-                // Nếu đang ở màn hình đích thì reload về đầu
-                if (!document.getElementById('step-3').classList.contains('hidden')) location.reload();
+                console.log("New Round Detected!");
             }
         }
 
@@ -93,13 +174,14 @@
             if (hasVoted) {
                 showStep3();
             } else if (currentUser) {
-                showStep2(); // Đã chọn tên -> Sang bước vote
+                showStep2();
             } else {
-                showStep1(); // Chưa có gì -> Chọn tên Voter
+                showStep1();
             }
         }
 
-        // Hiện danh sách Voter
+        // --- Render Giao diện ---
+
         function showStep1() {
             document.getElementById('step-1').classList.remove('hidden');
             const container = document.getElementById('voter-list');
@@ -109,7 +191,8 @@
 
             listVoters.forEach(p => {
                 const btn = document.createElement('button');
-                btn.innerText = p.name; // Cột 'name' sheet Voters
+                btn.className = 'option-btn';
+                btn.innerText = p.name;
                 btn.onclick = () => {
                     currentUser = p.name;
                     localStorage.setItem('voter_name', currentUser);
@@ -119,7 +202,6 @@
             });
         }
 
-        // Hiện danh sách Nominee
         function showStep2() {
             document.getElementById('step-1').classList.add('hidden');
             document.getElementById('step-2').classList.remove('hidden');
@@ -132,39 +214,50 @@
 
             listNominees.forEach(p => {
                 const btn = document.createElement('button');
-                btn.className = 'btn-vote';
-                btn.innerText = p.name; // Cột 'name' sheet Nominees
-                
-                // (Tùy chọn) Ẩn nút nếu Voter trùng tên Nominee (không tự bầu)
-                // if (p.name === currentUser) return; 
-
+                btn.className = 'option-btn';
+                btn.innerText = "🗳️ " + p.name; 
                 btn.onclick = () => submitVote(p.name);
                 container.appendChild(btn);
             });
-        }
-
-        async function submitVote(voteFor) {
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('step-2').classList.add('hidden');
-            try {
-                await fetch(API_URL + "?action=vote", {
-                    method: "POST",
-                    body: JSON.stringify({ nguoiBau: currentUser, bauChoAi: voteFor })
-                });
-                localStorage.setItem('has_voted', 'true');
-                showStep3();
-            } catch (err) {
-                alert("Lỗi gửi phiếu!");
-                location.reload();
-            } finally {
-                document.getElementById('loading').classList.add('hidden');
-            }
         }
 
         function showStep3() {
             document.getElementById('step-1').classList.add('hidden');
             document.getElementById('step-2').classList.add('hidden');
             document.getElementById('step-3').classList.remove('hidden');
+        }
+
+        // --- Logic Gửi Phiếu ---
+
+        async function submitVote(voteFor) {
+            // Hiệu ứng Loading
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('loading').innerText = "🚀 Đang gửi phiếu...";
+            document.getElementById('step-2').classList.add('hidden');
+
+            try {
+                const res = await fetch(API_URL + "?action=vote", {
+                    method: "POST",
+                    body: JSON.stringify({ nguoiBau: currentUser, bauChoAi: voteFor })
+                });
+                
+                // Lưu trạng thái đã bầu
+                localStorage.setItem('has_voted', 'true');
+                
+                document.getElementById('loading').classList.add('hidden');
+                showStep3();
+            } catch (err) {
+                alert("Lỗi gửi phiếu! Vui lòng thử lại.");
+                location.reload();
+            }
+        }
+
+        // Tiện ích: Cho phép chọn lại người bầu (nếu lỡ chọn nhầm tên)
+        function resetVoter() {
+            if(confirm("Bạn có muốn chọn lại tên Người Bầu không?")) {
+                localStorage.removeItem('voter_name');
+                location.reload();
+            }
         }
 
         init();
