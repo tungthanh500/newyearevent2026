@@ -3,261 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Bình Chọn Online</title>
+    <title>Ứng Dụng Bầu Chọn</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; min-height: 100vh; margin: 0; padding-top: 20px; }
-        .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 95%; max-width: 480px; text-align: center; }
-        .btn { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn:disabled { background: #ccc; cursor: default; }
-        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;}
-        .hidden { display: none; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .result-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f9; }
+        h1 { text-align: center; color: #333; }
+        
+        /* Loading Spinner */
+        #loading { text-align: center; font-style: italic; color: #666; margin-top: 20px; }
+        
+        /* Danh sách ứng viên */
+        .candidate-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .candidate-name { font-weight: bold; font-size: 1.1em; }
+        
+        /* Nút Vote */
+        .btn-vote {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn-vote:hover { background-color: #0056b3; }
+        .btn-vote:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        /* Thông báo lỗi/thành công */
+        #message { text-align: center; margin-top: 10px; height: 20px; }
+        .success { color: green; }
+        .error { color: red; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="loader" class="loader hidden"></div>
-    
-    <div id="screen-login">
-        <h2>👋 Bạn là ai?</h2>
-        <div id="user-list">Đang tải danh sách...</div>
-    </div>
+    <h1>🗳️ Bầu Chọn Nhóm</h1>
 
-    <div id="screen-admin" class="hidden">
-        <h2 style="color:#d63384">QUẢN TRỊ VIÊN</h2>
-        <input type="text" id="question-input" placeholder="Nhập câu hỏi mới...">
-        <button class="btn btn-primary" onclick="setQuestion()">🚀 Bắt đầu bình chọn mới</button>
-        <hr>
-        <p>Tiến độ: <span id="admin-progress">0</span> người đã chọn</p>
-        <button class="btn btn-success" onclick="refreshData(true)">🔄 Cập nhật Tiến độ</button>
-        <button class="btn btn-primary" onclick="showResultScreen()">🏆 SHOW KẾT QUẢ</button>
-    </div>
+    <div id="message"></div>
 
-    <div id="screen-vote" class="hidden">
-        <h3>Xin chào, <span id="current-user"></span></h3>
-        <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-            <small>Câu hỏi:</small><br>
-            <b id="vote-question" style="color: #007bff; font-size: 1.2em;">...</b>
-        </div>
-        <p>Chọn 1 người (trừ bạn):</p>
-        <div id="vote-options"></div>
-    </div>
+    <div id="loading">⏳ Đang tải danh sách...</div>
 
-    <div id="screen-result" class="hidden">
-        <h1>🏆 KẾT QUẢ 🏆</h1>
-        <p id="result-question" style="font-style: italic;"></p>
-        <div id="result-board"></div>
-        <button class="btn btn-primary" onclick="location.reload()">Trở về màn hình chính</button>
-    </div>
-</div>
+    <div id="list-container"></div>
 
-<script>
-    // --- CẤU HÌNH ---
-    // QUAN TRỌNG: Dán link Web App của bạn vào đây
-    const API_URL = "https://script.google.com/macros/s/AKfycbyUKDe0dVVZWD_BSoFA56HpCGdeBJAnJtLjdJo18itiqxOM904ajf5m25leX-g3aNWCWw/exec"; 
-    
-    const ADMIN_NAME = "Admin"; // Tên Admin trong Google Sheet
-    let currentUser = "";
-    let appData = {};
+    <script>
+        // --- CẤU HÌNH ---
+        // QUAN TRỌNG: Dán link Web App URL của bạn vào đây
+        // Link phải có đuôi /exec (không phải /dev)
+        const API_URL = "https://script.google.com/macros/s/AKfycbwvjp7E3rwyv7E-0C5CB-K6-m7BKPXikMXroNY-OkpTpD-_PRQ691IOVaKf1F_jn-K_Rw/exec"; 
 
-    // --- LOGIC ---
-
-    // 1. Khởi động: Lấy dữ liệu từ Sheet
-    async function init() {
-        showLoader(true);
-        try {
-            // Thêm tham số action=getData
-            const res = await fetch(API_URL + "?action=getData");
-            const data = await res.json();
-            appData = data;
-            renderUserList(data.users);
-        } catch (e) {
-            alert("Lỗi kết nối: " + e);
-        }
-        showLoader(false);
-    }
-
-    // Hiển thị danh sách user để đăng nhập
-    function renderUserList(users) {
-        const list = document.getElementById('user-list');
-        list.innerHTML = "";
-        users.forEach(u => {
-            const btn = document.createElement('button');
-            btn.className = "btn " + (u.hasVoted ? "btn-disabled" : "btn-primary");
-            btn.style.backgroundColor = u.hasVoted ? "#ccc" : "";
-            btn.innerText = u.name + (u.hasVoted ? " (Đã chọn)" : "");
+        // 1. Hàm lấy danh sách khi mở web
+        async function loadCandidates() {
+            const loadingEl = document.getElementById('loading');
+            const container = document.getElementById('list-container');
             
-            // Nếu đã chọn rồi thì không cho vào nữa (trừ Admin)
-            if(u.hasVoted && u.name !== ADMIN_NAME) {
-                btn.disabled = true;
+            try {
+                // Gọi API với action=getList
+                const response = await fetch(API_URL + "?action=getList");
+                const json = await response.json();
+
+                if (json.status === "success") {
+                    renderList(json.data);
+                } else {
+                    document.getElementById('message').innerText = "Lỗi: " + json.message;
+                    document.getElementById('message').className = "error";
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('message').innerText = "Không thể kết nối đến Server!";
+                document.getElementById('message').className = "error";
+            } finally {
+                // Tắt loading dù thành công hay thất bại
+                loadingEl.style.display = 'none';
             }
-
-            btn.onclick = () => handleLogin(u.name);
-            list.appendChild(btn);
-        });
-    }
-
-    function handleLogin(name) {
-        currentUser = name;
-        document.getElementById('screen-login').classList.add('hidden');
-
-        if (name === ADMIN_NAME) {
-            document.getElementById('screen-admin').classList.remove('hidden');
-            refreshData(true); // Admin vào thì load lại số liệu mới nhất
-        } else {
-            setupVoteScreen();
-        }
-    }
-
-    // Thiết lập màn hình bình chọn
-    function setupVoteScreen() {
-        document.getElementById('screen-vote').classList.remove('hidden');
-        document.getElementById('current-user').innerText = currentUser;
-        document.getElementById('vote-question').innerText = appData.question || "(Chưa có câu hỏi)";
-
-        const optionsDiv = document.getElementById('vote-options');
-        optionsDiv.innerHTML = "";
-
-        if (!appData.question) {
-            optionsDiv.innerHTML = "<p>Admin chưa tạo câu hỏi. Vui lòng quay lại sau.</p>";
-            return;
         }
 
-        appData.users.forEach(u => {
-            if (u.name !== currentUser && u.name !== ADMIN_NAME) { // Không hiện Admin & Bản thân
-                const btn = document.createElement('button');
-                btn.className = "btn";
-                btn.style.border = "1px solid #ccc";
-                btn.innerText = u.name;
-                btn.onclick = () => submitVote(u.name);
-                optionsDiv.appendChild(btn);
-            }
-        });
-    }
+        // 2. Hàm vẽ danh sách ra màn hình
+        function renderList(candidates) {
+            const container = document.getElementById('list-container');
+            container.innerHTML = ""; // Xóa cũ
 
-    // Gửi vote lên Google Sheet
-    async function submitVote(voteFor) {
-        if (!confirm("Chọn " + voteFor + "?")) return;
-        
-        showLoader(true);
-        // Gửi POST request
-        await fetch(API_URL, {
-            method: 'POST',
-            mode: 'no-cors', // Quan trọng để gửi form tới Google Script
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'vote', user: currentUser, voteFor: voteFor })
-        });
-
-        // Vì mode 'no-cors' không trả về response đọc được, ta giả định thành công
-        alert("Đã gửi lựa chọn!");
-        location.reload(); 
-    }
-
-    // Admin: Tạo câu hỏi mới
-    async function setQuestion() {
-        const q = document.getElementById('question-input').value;
-        if (!q) return alert("Nhập câu hỏi!");
-        
-        if(!confirm("Hành động này sẽ XÓA hết kết quả cũ. Tiếp tục?")) return;
-
-        showLoader(true);
-        await fetch(API_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'setQuestion', question: q })
-        });
-        
-        alert("Đã tạo câu hỏi mới!");
-        refreshData(true); // Load lại dữ liệu để cập nhật giao diện admin
-    }
-
-    // Admin: Làm mới dữ liệu (Pull data mới nhất)
-    async function refreshData(stayInAdmin = false) {
-        showLoader(true);
-        const res = await fetch(API_URL + "?action=getData");
-        const data = await res.json();
-        appData = data;
-        
-        // Cập nhật số liệu admin
-        const votedCount = data.users.filter(u => u.hasVoted).length;
-        document.getElementById('admin-progress').innerText = votedCount;
-        
-        showLoader(false);
-        if(!stayInAdmin) renderUserList(data.users);
-    }
-
-    // Hiển thị màn hình kết quả
-    function showResultScreen() {
-        document.getElementById('screen-admin').classList.add('hidden');
-        document.getElementById('screen-result').classList.remove('hidden');
-        
-        document.getElementById('result-question').innerText = appData.question;
-        const board = document.getElementById('result-board');
-        board.innerHTML = "";
-
-        // Sắp xếp kết quả
-        let sorted = Object.entries(appData.results).sort((a,b) => b[1] - a[1]);
-        
-        if(sorted.length === 0) board.innerHTML = "<p>Chưa có ai bình chọn</p>";
-
-        sorted.forEach((item, idx) => {
-            const div = document.createElement('div');
-            div.className = "result-item";
-            let rank = idx + 1;
-            let style = (rank === 1) ? "color:green; font-weight:bold; font-size:1.2em;" : "";
-            div.innerHTML = `<span style="${style}">#${rank} ${item[0]}</span> <b>${item[1]} phiếu</b>`;
-            board.appendChild(div);
-        });
-    }
-
-    function showLoader(show) {
-        if(show) document.getElementById('loader').classList.remove('hidden');
-        else document.getElementById('loader').classList.add('hidden');
-    }
-
-    // Chạy
-    // Tìm hàm init() cũ và thay bằng đoạn này
-    async function init() {
-        showLoader(true);
-        try {
-            const res = await fetch(API_URL + "?action=getData");
-            const data = await res.json();
-            
-            // --- THÊM ĐOẠN KIỂM TRA LỖI NÀY ---
-            if (!data.success) {
-                alert("Lỗi từ Google Sheet: " + (data.error || "Không lấy được dữ liệu"));
-                console.error("Chi tiết lỗi:", data);
+            if (candidates.length === 0) {
+                container.innerHTML = "<p style='text-align:center'>Danh sách trống</p>";
                 return;
             }
-            if (!data.users || !Array.isArray(data.users)) {
-                 alert("Lỗi cấu trúc dữ liệu: Không tìm thấy danh sách 'users'. Kiểm tra lại tên Sheet.");
-                 return;
-            }
-            // ----------------------------------
 
-            appData = data;
-            renderUserList(data.users);
-        } catch (e) {
-            alert("Không thể kết nối tới Google Sheet. Hãy kiểm tra lại đường link API_URL.");
-            console.error(e);
-        } finally {
-            showLoader(false);
+            candidates.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'candidate-card';
+                div.innerHTML = `
+                    <span class="candidate-name">${c.name}</span> <button class="btn-vote" onclick="handleVote('${c.name}')">Bầu chọn</button>
+                `;
+                container.appendChild(div);
+            });
         }
-    }
 
-</script>
+        // 3. Hàm xử lý khi bấm nút Vote
+        function handleVote(tenUngVien) {
+            // Hỏi tên người bầu (hoặc bạn có thể fix cứng nếu muốn)
+            const nguoiBau = prompt("Bạn tên là gì?");
+            if (!nguoiBau) return; // Nếu bấm hủy thì thôi
 
+            // Hiệu ứng đang gửi...
+            const msgEl = document.getElementById('message');
+            msgEl.innerText = "Đang gửi phiếu...";
+            msgEl.className = "";
+
+            // Gửi dữ liệu đi (Dùng text/plain để tránh lỗi CORS của Google)
+            fetch(API_URL + "?action=vote", {
+                method: "POST",
+                body: JSON.stringify({
+                    nguoiBau: nguoiBau,
+                    bauChoAi: tenUngVien
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "success") {
+                    msgEl.innerText = "✅ Đã bầu thành công cho " + tenUngVien;
+                    msgEl.className = "success";
+                } else {
+                    msgEl.innerText = "❌ Lỗi: " + data.message;
+                    msgEl.className = "error";
+                }
+            })
+            .catch(err => {
+                msgEl.innerText = "❌ Lỗi kết nối!";
+                msgEl.className = "error";
+            });
+        }
+
+        // Chạy hàm lấy danh sách ngay khi tải trang
+        loadCandidates();
+    </script>
 </body>
-
 </html>
-
-
-
-
