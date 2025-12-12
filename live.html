@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Xếp Hạng Trực Tiếp</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background-color: #1a1a2e; /* Màu nền tối cho ngầu */
+            color: #fff;
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+        }
+
+        h1 { text-align: center; margin-bottom: 10px; color: #e94560; text-transform: uppercase; letter-spacing: 2px;}
+        
+        /* Chấm đỏ nhấp nháy báo hiệu LIVE */
+        .live-indicator {
+            text-align: center;
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .dot {
+            height: 10px; width: 10px;
+            background-color: red;
+            border-radius: 50%;
+            display: inline-block;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Card chứa từng ứng viên */
+        .rank-card {
+            background: #16213e;
+            margin-bottom: 15px;
+            padding: 15px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        .rank-card:hover { transform: scale(1.02); }
+
+        /* Top 1 nổi bật */
+        .rank-card.top-1 { 
+            background: linear-gradient(45deg, #f9c449, #e0aa3e); 
+            color: #000;
+            border: 2px solid #fff;
+        }
+        .rank-card.top-2 { border-left: 5px solid #c0c0c0; }
+        .rank-card.top-3 { border-left: 5px solid #cd7f32; }
+
+        .info { z-index: 2; display: flex; align-items: center; gap: 15px; width: 200px; }
+        .rank-num { font-weight: bold; font-size: 1.5em; width: 30px;}
+        .name { font-weight: bold; font-size: 1.2em; white-space: nowrap;}
+
+        .vote-count { z-index: 2; font-weight: bold; font-size: 1.2em; }
+
+        /* Thanh Progress Bar */
+        .progress-bg {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 1;
+            transition: width 1s ease-in-out; /* Hiệu ứng chạy mượt */
+        }
+        .top-1 .progress-bg { background: rgba(255, 255, 255, 0.4); }
+
+    </style>
+</head>
+<body>
+
+    <h1>🏆 Bảng Xếp Hạng</h1>
+    <div class="live-indicator">
+        <span class="dot"></span> Đang cập nhật trực tiếp...
+    </div>
+
+    <div id="leaderboard">
+        <p style="text-align:center; color:#666">Đang tải dữ liệu...</p>
+    </div>
+
+    <script>
+        // --- CẤU HÌNH ---
+        // Thay đúng link của bạn vào đây
+        const API_URL = "https://script.google.com/macros/s/AKfycby...CHANGE_ME.../exec"; 
+        
+        const UPDATE_INTERVAL = 5000; // Cập nhật mỗi 5 giây (5000ms)
+
+        async function updateLeaderboard() {
+            try {
+                // Gọi API action=getResult
+                const res = await fetch(API_URL + "?action=getResult");
+                const json = await res.json();
+
+                if (json.status === "success") {
+                    renderLeaderboard(json.ranking);
+                }
+            } catch (err) {
+                console.error("Lỗi cập nhật:", err);
+            }
+        }
+
+        function renderLeaderboard(ranking) {
+            const container = document.getElementById('leaderboard');
+            container.innerHTML = ""; // Xóa cũ
+
+            if (ranking.length === 0) {
+                container.innerHTML = "<p style
