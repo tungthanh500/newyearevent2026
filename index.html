@@ -3,123 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bầu Chọn Nhóm</title>
+    <title>Bầu Chọn</title>
     <style>
         body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f4f4f9; }
         .hidden { display: none !important; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;}
-        button { width: 100%; padding: 10px; margin: 5px 0; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; }
-        button:hover { background-color: #e0e0e0; }
-        .btn-vote { background-color: #007bff; color: white; border: none; }
-        #loading { text-align: center; color: #666; }
-        .locked-msg { color: #d9534f; font-size: 0.9em; text-align: center; margin-bottom: 10px;}
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px;}
+        button { width: 100%; padding: 12px; margin: 5px 0; cursor: pointer; border-radius: 5px; border: 1px solid #ddd; background: #fff; font-size: 16px;}
+        button:hover { background-color: #f0f0f0; border-color: #bbb;}
+        .btn-vote { background-color: #007bff; color: white; border: none; font-weight: bold;}
+        .btn-vote:hover { background-color: #0056b3; }
+        #loading { text-align: center; color: #666; margin-top: 50px;}
+        #topic-header { text-align: center; color: #d63031; text-transform: uppercase; margin-bottom: 5px;}
     </style>
 </head>
 <body>
 
-    <div id="loading">⏳ Đang tải...</div>
+    <h2 id="topic-header"></h2>
+    <div id="loading">⏳ Đang tải dữ liệu...</div>
 
     <div id="step-1" class="card hidden">
-        <h2>👋 Bạn là ai?</h2>
+        <h3>👋 Xin chào, bạn là ai?</h3>
+        <p>Vui lòng chọn tên của bạn để bắt đầu:</p>
         <div id="voter-list"></div>
     </div>
 
     <div id="step-2" class="card hidden">
-        <h2>🗳️ Bầu Chọn</h2>
-        <p class="locked-msg">🔒 Máy này đang được định danh là: <b id="user-name-display"></b></p>
-        <p>Chọn người bạn muốn bầu:</p>
+        <h3>🗳️ Mời bỏ phiếu</h3>
+        <p>Người bầu: <b id="user-name-display" style="color:#0984e3"></b></p>
+        <p>Hãy chọn ứng viên bạn tín nhiệm:</p>
         <div id="nominee-list"></div>
     </div>
 
     <div id="step-3" class="card hidden">
-        <h2 style="text-align: center; color: green;">✅ Đã gửi phiếu bầu!</h2>
+        <h2 style="text-align: center; color: green;">✅ Đã gửi phiếu!</h2>
         <p style="text-align: center;">Cảm ơn bạn đã tham gia.</p>
-        <button onclick="window.location.href='result.html'" style="background:#28a745; color:white">Xem Kết Quả Trực Tiếp</button>
+        <button onclick="window.location.href='result.html'" style="background:#28a745; color:white; border:none">Xem Kết Quả</button>
     </div>
 
     <script>
         // --- THAY LINK CỦA BẠN VÀO ĐÂY ---
-        const API_URL = "https://script.google.com/macros/s/AKfycbxj2B1XkzBT87WbsRws98AKGVEYB5veURyftkavdtCleaEjec0zVXQJJ1x06co7ZS479A/exec"; 
+        const API_URL = "https://script.google.com/macros/s/AKfycbyDgXOTzOfK6JhLHgGsRd-ONs2fmzh748FUbnXxDmhAdKPExKZYChqOpnrxDLaerx3fYw/exec"; 
 
-let allCandidates = [];
-let currentUser = localStorage.getItem('voter_name');
-
-// 1. Hàm khởi động thông minh hơn
-async function init() {
-    try {
-        // Tải dữ liệu từ server về trước
-        await loadData();
-
-        // Lấy trạng thái đã bầu trong máy
-        let hasVoted = localStorage.getItem('has_voted');
-
-        // Logic kiểm tra xem có nên hiện trang "Đã bầu xong" hay không
-        if (hasVoted) {
-            showStep3();
-        } else if (currentUser) {
-            // Chưa bầu nhưng máy đã nhớ tên -> Vào thẳng bước 2
-            showStep2();
-        } else {
-            // Chưa có gì cả -> Bước 1
-            showStep1();
-        }
-
-    } catch (err) {
-        console.error(err);
-        alert("Lỗi tải trang!");
-    } finally {
-        document.getElementById('loading').classList.add('hidden');
-    }
-}
-
-// 2. Cập nhật hàm loadData để check Round ID
-async function loadData() {
-    const res = await fetch(API_URL + "?action=getList");
-    const json = await res.json();
-    
-    if (json.status === "success") {
-        allCandidates = json.data;
+        // Biến lưu 2 danh sách riêng biệt
+        let listVoters = [];
+        let listNominees = [];
         
-        // --- ĐOẠN MỚI: KIỂM TRA MÃ PHIÊN ---
-        const serverRoundId = json.roundId; // Mã phiên từ server
-        const localRoundId = localStorage.getItem('saved_round_id'); // Mã phiên trong máy
-        
-        // Nếu mã server khác mã trong máy => Admin đã bấm Reset
-        if (serverRoundId && serverRoundId !== localRoundId) {
-            console.log("Phát hiện vòng bầu cử mới! Reset trạng thái.");
-            
-            // Xóa trạng thái "Đã bầu"
-            localStorage.removeItem('has_voted');
-            
-            // Cập nhật mã phiên mới vào máy
-            localStorage.setItem('saved_round_id', serverRoundId);
-            
-            // Nếu đang kẹt ở màn hình Step 3 (Kết quả), reload lại để về Step 2
-            if (!document.getElementById('step-3').classList.contains('hidden')) {
-                location.reload();
+        let currentUser = localStorage.getItem('voter_name');
+
+        async function init() {
+            try {
+                // Gọi API lấy dữ liệu
+                const res = await fetch(API_URL + "?action=getList");
+                const json = await res.json();
+                
+                if (json.status === "success") {
+                    // Tách dữ liệu ra 2 biến
+                    listVoters = json.voters;
+                    listNominees = json.nominees;
+                    
+                    // Hiển thị chủ đề
+                    document.getElementById('topic-header').innerText = json.topic;
+
+                    // Kiểm tra Reset
+                    checkReset(json.roundId);
+
+                    // Điều hướng màn hình
+                    navigateStep();
+                }
+            } catch (err) {
+                alert("Lỗi kết nối server!");
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
             }
         }
-        // ------------------------------------
-    }
-}
 
+        function checkReset(serverRoundId) {
+            const localRoundId = localStorage.getItem('saved_round_id');
+            if (serverRoundId && serverRoundId !== localRoundId) {
+                localStorage.removeItem('has_voted'); // Xóa trạng thái đã bầu
+                localStorage.setItem('saved_round_id', serverRoundId);
+                // Nếu đang ở màn hình đích thì reload về đầu
+                if (!document.getElementById('step-3').classList.contains('hidden')) location.reload();
+            }
+        }
+
+        function navigateStep() {
+            const hasVoted = localStorage.getItem('has_voted');
+
+            if (hasVoted) {
+                showStep3();
+            } else if (currentUser) {
+                showStep2(); // Đã chọn tên -> Sang bước vote
+            } else {
+                showStep1(); // Chưa có gì -> Chọn tên Voter
+            }
+        }
+
+        // Hiện danh sách Voter
         function showStep1() {
             document.getElementById('step-1').classList.remove('hidden');
             const container = document.getElementById('voter-list');
+            container.innerHTML = "";
             
-            allCandidates.forEach(p => {
+            if(listVoters.length === 0) container.innerHTML = "<p>Danh sách Voter trống</p>";
+
+            listVoters.forEach(p => {
                 const btn = document.createElement('button');
-                btn.innerText = p.name;
+                btn.innerText = p.name; // Cột 'name' sheet Voters
                 btn.onclick = () => {
-                    // --- KHÓA MÁY TẠI ĐÂY ---
                     currentUser = p.name;
-                    localStorage.setItem('voter_name', currentUser); // Lưu vào bộ nhớ máy
+                    localStorage.setItem('voter_name', currentUser);
                     showStep2();
                 };
                 container.appendChild(btn);
             });
         }
 
+        // Hiện danh sách Nominee
         function showStep2() {
             document.getElementById('step-1').classList.add('hidden');
             document.getElementById('step-2').classList.remove('hidden');
@@ -127,14 +127,17 @@ async function loadData() {
 
             const container = document.getElementById('nominee-list');
             container.innerHTML = "";
-            
-            // Lọc tên mình ra
-            const nominees = allCandidates.filter(p => p.name !== currentUser);
 
-            nominees.forEach(p => {
+            if(listNominees.length === 0) container.innerHTML = "<p>Danh sách Ứng viên trống</p>";
+
+            listNominees.forEach(p => {
                 const btn = document.createElement('button');
                 btn.className = 'btn-vote';
-                btn.innerText = "Bầu cho " + p.name;
+                btn.innerText = p.name; // Cột 'name' sheet Nominees
+                
+                // (Tùy chọn) Ẩn nút nếu Voter trùng tên Nominee (không tự bầu)
+                // if (p.name === currentUser) return; 
+
                 btn.onclick = () => submitVote(p.name);
                 container.appendChild(btn);
             });
@@ -143,37 +146,28 @@ async function loadData() {
         async function submitVote(voteFor) {
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('step-2').classList.add('hidden');
-
             try {
                 await fetch(API_URL + "?action=vote", {
                     method: "POST",
                     body: JSON.stringify({ nguoiBau: currentUser, bauChoAi: voteFor })
                 });
-                
-                // Lưu trạng thái đã bầu để lần sau vào không bầu được nữa
                 localStorage.setItem('has_voted', 'true');
                 showStep3();
-                
             } catch (err) {
                 alert("Lỗi gửi phiếu!");
-                location.reload(); // Thử lại
+                location.reload();
             } finally {
                 document.getElementById('loading').classList.add('hidden');
             }
         }
 
         function showStep3() {
-            document.getElementById('loading').classList.add('hidden');
             document.getElementById('step-1').classList.add('hidden');
             document.getElementById('step-2').classList.add('hidden');
             document.getElementById('step-3').classList.remove('hidden');
         }
 
-        // Mẹo cho Admin: Muốn reset máy để test lại thì mở Console (F12) gõ: localStorage.clear()
         init();
     </script>
 </body>
 </html>
-
-
-
